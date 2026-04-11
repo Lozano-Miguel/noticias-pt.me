@@ -4,6 +4,8 @@ import supabase from "../../../lib/supabase.js";
 import SOURCES from "../../../lib/sources.js";
 import fetchAndSave from "../../../lib/fetchFeed.js";
 
+export const maxDuration = 300;
+
 export async function GET() {
   const succeeded = [];
   const failed = [];
@@ -20,17 +22,39 @@ export async function GET() {
     console.log("FAILED: delete old articles - " + error.message);
   }
 
-  for (const source of SOURCES) {
-    try {
+  const timingSlots = [];
+  const results = await Promise.allSettled(
+    SOURCES.map(async (source, index) => {
       console.log("Fetching: " + source.name + " - " + source.url);
-      await fetchAndSave(source);
+      const start = Date.now();
+      try {
+        await fetchAndSave(source);
+      } finally {
+        timingSlots[index] = {
+          source: source.name,
+          url: source.url,
+          seconds: (Date.now() - start) / 1000,
+        };
+      }
+    }),
+  );
+
+  const timing = [...timingSlots].sort((a, b) => b.seconds - a.seconds);
+
+  results.forEach((result, index) => {
+    const source = SOURCES[index];
+    if (result.status === "fulfilled") {
       console.log("OK: " + source.name);
       succeeded.push(source.name);
-    } catch (error) {
-      console.log("FAILED: " + source.name + " - " + error.message);
-      failed.push(source.name);
+    } else {
+      const reason =
+        result.reason instanceof Error
+          ? result.reason.message
+          : String(result.reason);
+      console.log("FAILED: " + source.name + " - " + reason);
+      failed.push(source.name + " - " + reason);
     }
-  }
+  });
 
   try {
     await supabase.rpc("cleanup_old_articles");
@@ -38,5 +62,5 @@ export async function GET() {
     console.log("FAILED: cleanup_old_articles - " + error.message);
   }
 
-  return NextResponse.json({ succeeded, failed });
+  return NextResponse.json({ succeeded, failed, timing });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ArticleCard from "./ArticleCard.js";
 import ArticleSkeleton from "./ArticleSkeleton.js";
 
@@ -40,6 +40,7 @@ export default function ArticleFeed({ articles }) {
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const loaderRef = useRef(null);
 
   const ARTICLES_PER_PAGE = 20;
 
@@ -74,6 +75,31 @@ export default function ArticleFeed({ articles }) {
     setPage(1);
     fetchArticles();
   }, [activeCategory, activeSource, searchQuery]);
+
+  const filteredArticles = useMemo(
+    () => (Array.isArray(articlesState) ? articlesState : []),
+    [articlesState],
+  );
+
+  useEffect(() => {
+    const el = loaderRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          if (filteredArticles.length > page * ARTICLES_PER_PAGE) {
+            setPage((prev) => prev + 1);
+          }
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [filteredArticles.length, page]);
 
   const paginatedArticles = useMemo(() => {
     const all = Array.isArray(articlesState) ? articlesState : [];
@@ -187,7 +213,7 @@ export default function ArticleFeed({ articles }) {
       ) : null}
 
       <main className="mx-auto max-w-2xl px-4 py-4">
-        {loading ? (
+        {loading && page === 1 ? (
           <>
             <ArticleSkeleton type="featured" />
             <div className="mt-4 grid grid-cols-2 gap-3">
@@ -243,19 +269,15 @@ export default function ArticleFeed({ articles }) {
               </div>
             ) : null}
 
-            {totalCount > paginatedArticles.length ? (
-              <button
-                type="button"
-                onClick={() => setPage((p) => p + 1)}
-                className="mt-6 w-full rounded-lg border border-zinc-200 py-3 text-sm text-zinc-500 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
-              >
-                Carregar mais
-              </button>
-            ) : totalCount > ARTICLES_PER_PAGE ? (
-              <p className="mt-6 text-center text-sm text-zinc-400">
-                Sem mais artigos nesta categoria.
-              </p>
+            {loading && page > 1 ? (
+              <div className="mt-6 flex flex-col items-center gap-2">
+                <ArticleSkeleton type="compact" />
+                <ArticleSkeleton type="compact" />
+                <ArticleSkeleton type="compact" />
+              </div>
             ) : null}
+
+            <div ref={loaderRef} className="h-10" />
           </>
         )}
       </main>
