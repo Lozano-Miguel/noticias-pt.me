@@ -18,9 +18,23 @@ const CATEGORIES = [
   "Automóvel",
 ];
 
+const SOURCES = [
+  "Todas",
+  "Notícias ao Minuto",
+  "RTP Notícias",
+  "Renascença",
+  "SAPO",
+  "Correio da Manhã",
+  "Record",
+  "Jornal de Negócios",
+  "Observador",
+];
+
 export default function ArticleFeed({ articles }) {
   const [articlesState, setArticlesState] = useState(articles);
   const [activeCategory, setActiveCategory] = useState("Todas");
+  const [activeSource, setActiveSource] = useState("Todas");
+  const [showSources, setShowSources] = useState(false);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -30,10 +44,15 @@ export default function ArticleFeed({ articles }) {
     setLoading(true);
 
     try {
-      const url =
-        activeCategory === "Todas"
-          ? "/api/articles"
-          : `/api/articles?category=${encodeURIComponent(activeCategory)}`;
+      const params = new URLSearchParams();
+      if (activeCategory !== "Todas") {
+        params.set("category", activeCategory);
+      }
+      if (activeSource !== "Todas") {
+        params.set("source", activeSource);
+      }
+      const qs = params.toString();
+      const url = qs ? `/api/articles?${qs}` : "/api/articles";
 
       const res = await fetch(url);
       const data = await res.json();
@@ -48,7 +67,7 @@ export default function ArticleFeed({ articles }) {
   useEffect(() => {
     setPage(1);
     fetchArticles();
-  }, [activeCategory]);
+  }, [activeCategory, activeSource]);
 
   const paginatedArticles = useMemo(() => {
     const all = Array.isArray(articlesState) ? articlesState : [];
@@ -59,27 +78,60 @@ export default function ArticleFeed({ articles }) {
 
   return (
     <>
-      <div className="scrollbar-hide flex gap-2 overflow-x-auto px-4 py-3">
-        {CATEGORIES.map((category) => {
-          const isActive = category === activeCategory;
+      <div className="flex items-center gap-2 px-4 py-3">
+        <div className="scrollbar-hide flex min-w-0 flex-1 gap-2 overflow-x-auto">
+          {CATEGORIES.map((category) => {
+            const isActive = category === activeCategory;
 
-          return (
-            <button
-              key={category}
-              type="button"
-              onClick={() => setActiveCategory(category)}
-              className={[
-                "shrink-0 rounded-full px-3 py-1 text-sm",
-                isActive
-                  ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                  : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
-              ].join(" ")}
-            >
-              {category}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setActiveCategory(category)}
+                className={[
+                  "shrink-0 rounded-full px-3 py-1 text-sm",
+                  isActive
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+                ].join(" ")}
+              >
+                {category}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowSources((v) => !v)}
+          className="flex-shrink-0 rounded-full border border-zinc-300 px-3 py-1 text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400"
+        >
+          {showSources ? "Fechar" : "Fonte"}
+        </button>
       </div>
+
+      {showSources ? (
+        <div className="flex gap-2 overflow-x-auto px-4 py-2 scrollbar-hide border-b border-zinc-100 dark:border-zinc-800">
+          {SOURCES.map((sourceName) => {
+            const isActive = sourceName === activeSource;
+
+            return (
+              <button
+                key={sourceName}
+                type="button"
+                onClick={() => setActiveSource(sourceName)}
+                className={[
+                  "shrink-0 rounded-full px-3 py-1 text-sm",
+                  isActive
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+                ].join(" ")}
+              >
+                {sourceName}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       <main className="mx-auto max-w-2xl px-4 py-4">
         {loading ? (

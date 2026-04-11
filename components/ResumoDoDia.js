@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 export default function ResumoDoDia() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
