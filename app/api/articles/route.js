@@ -7,6 +7,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
     const source = searchParams.get("source");
+    const search = searchParams.get("search");
 
     let query = supabase
       .from("articles")
@@ -20,6 +21,12 @@ export async function GET(request) {
 
     if (source && source !== "Todas") {
       query = query.eq("source", source);
+    }
+
+    if (search && search !== "") {
+      query = query.or(
+        `title.ilike.%${search}%,description.ilike.%${search}%`,
+      );
     }
 
     const { data, error } = await query;

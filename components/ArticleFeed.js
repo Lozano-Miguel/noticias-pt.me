@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ArticleCard from "./ArticleCard.js";
+import ArticleSkeleton from "./ArticleSkeleton.js";
 
 const CATEGORIES = [
   "Todas",
@@ -35,6 +36,8 @@ export default function ArticleFeed({ articles }) {
   const [activeCategory, setActiveCategory] = useState("Todas");
   const [activeSource, setActiveSource] = useState("Todas");
   const [showSources, setShowSources] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -50,6 +53,9 @@ export default function ArticleFeed({ articles }) {
       }
       if (activeSource !== "Todas") {
         params.set("source", activeSource);
+      }
+      if (searchQuery !== "") {
+        params.set("search", searchQuery);
       }
       const qs = params.toString();
       const url = qs ? `/api/articles?${qs}` : "/api/articles";
@@ -67,7 +73,7 @@ export default function ArticleFeed({ articles }) {
   useEffect(() => {
     setPage(1);
     fetchArticles();
-  }, [activeCategory, activeSource]);
+  }, [activeCategory, activeSource, searchQuery]);
 
   const paginatedArticles = useMemo(() => {
     const all = Array.isArray(articlesState) ? articlesState : [];
@@ -78,66 +84,127 @@ export default function ArticleFeed({ articles }) {
 
   return (
     <>
-      <div className="flex items-center gap-2 px-4 py-3">
-        <div className="scrollbar-hide flex min-w-0 flex-1 gap-2 overflow-x-auto">
-          {CATEGORIES.map((category) => {
-            const isActive = category === activeCategory;
-
-            return (
-              <button
-                key={category}
-                type="button"
-                onClick={() => setActiveCategory(category)}
-                className={[
-                  "shrink-0 rounded-full px-3 py-1 text-sm",
-                  isActive
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
-                ].join(" ")}
-              >
-                {category}
-              </button>
-            );
-          })}
+      <div className="px-4 pb-1 pt-3">
+        <div className="flex">
+          <div className="relative min-w-0 flex-1">
+            <input
+              type="text"
+              placeholder="Pesquisar notícias..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setSearchQuery(searchInput);
+                  setPage(1);
+                }
+              }}
+              className="w-full rounded-lg border border-transparent bg-zinc-100 px-4 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-300 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-600"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery(searchInput);
+              setPage(1);
+            }}
+            className="ml-2 shrink-0 rounded-lg bg-zinc-900 px-3 py-2 text-sm text-white dark:bg-white dark:text-zinc-900"
+          >
+            Pesquisar
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowSources((v) => !v)}
-          className="flex-shrink-0 rounded-full border border-zinc-300 px-3 py-1 text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400"
-        >
-          {showSources ? "Fechar" : "Fonte"}
-        </button>
+        {searchQuery !== "" ? (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery("");
+              setSearchInput("");
+              setPage(1);
+            }}
+            className="mt-1 text-xs text-zinc-400 underline"
+          >
+            Limpar pesquisa
+          </button>
+        ) : null}
       </div>
 
-      {showSources ? (
-        <div className="flex gap-2 overflow-x-auto px-4 py-2 scrollbar-hide border-b border-zinc-100 dark:border-zinc-800">
-          {SOURCES.map((sourceName) => {
-            const isActive = sourceName === activeSource;
+      {searchQuery === "" ? (
+        <>
+          <div className="flex items-center gap-2 px-4 py-3">
+            <div className="scrollbar-hide flex min-w-0 flex-1 gap-2 overflow-x-auto">
+              {CATEGORIES.map((category) => {
+                const isActive = category === activeCategory;
 
-            return (
-              <button
-                key={sourceName}
-                type="button"
-                onClick={() => setActiveSource(sourceName)}
-                className={[
-                  "shrink-0 rounded-full px-3 py-1 text-sm",
-                  isActive
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
-                ].join(" ")}
-              >
-                {sourceName}
-              </button>
-            );
-          })}
-        </div>
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => setActiveCategory(category)}
+                    className={[
+                      "shrink-0 rounded-full px-3 py-1 text-sm",
+                      isActive
+                        ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+                    ].join(" ")}
+                  >
+                    {category}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowSources((v) => !v)}
+              className="flex-shrink-0 rounded-full border border-zinc-300 px-3 py-1 text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400"
+            >
+              {showSources ? "Fechar" : "Fonte"}
+            </button>
+          </div>
+
+          {showSources ? (
+            <div className="flex gap-2 overflow-x-auto border-b border-zinc-100 px-4 py-2 scrollbar-hide dark:border-zinc-800">
+              {SOURCES.map((sourceName) => {
+                const isActive = sourceName === activeSource;
+
+                return (
+                  <button
+                    key={sourceName}
+                    type="button"
+                    onClick={() => setActiveSource(sourceName)}
+                    className={[
+                      "shrink-0 rounded-full px-3 py-1 text-sm",
+                      isActive
+                        ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+                    ].join(" ")}
+                  >
+                    {sourceName}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       <main className="mx-auto max-w-2xl px-4 py-4">
         {loading ? (
-          <div className="py-10 text-center text-sm text-zinc-400">
-            A carregar...
-          </div>
+          <>
+            <ArticleSkeleton type="featured" />
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <ArticleSkeleton type="grid" />
+              <ArticleSkeleton type="grid" />
+              <ArticleSkeleton type="grid" />
+              <ArticleSkeleton type="grid" />
+            </div>
+            <div className="mt-6">
+              <ArticleSkeleton type="compact" />
+              <ArticleSkeleton type="compact" />
+              <ArticleSkeleton type="compact" />
+              <ArticleSkeleton type="compact" />
+              <ArticleSkeleton type="compact" />
+              <ArticleSkeleton type="compact" />
+            </div>
+          </>
         ) : paginatedArticles.length === 0 ? (
           <p className="py-10 text-center text-sm text-zinc-400">
             Sem artigos nesta categoria.
