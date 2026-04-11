@@ -18,8 +18,38 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body>{children}</body>
+    <html
+      lang="en"
+      suppressHydrationWarning={true}
+      className={`${geistSans.variable} ${geistMono.variable}`}
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function () {
+  try {
+    var theme = localStorage.getItem('theme');
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      return;
+    }
+    if (theme === 'light') {
+      document.documentElement.classList.remove('dark');
+      return;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  } catch (e) {}
+})();`,
+          }}
+        />
+      </head>
+      <body className="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased">
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,66 +1,35 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import supabase from "../lib/supabase.js";
+import ArticleFeed from "../components/ArticleFeed.js";
+import ResumoDoDia from "../components/ResumoDoDia.js";
+import ThemeToggle from "../components/ThemeToggle.js";
 
-export default function Home() {
+export default async function Page() {
+  const { data, error } = await supabase
+    .from("articles")
+    .select("*")
+    .order("published_at", { ascending: false })
+    .limit(60);
+
+  const articles = error ? [] : data ?? [];
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-dvh">
+      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="font-serif text-lg font-medium text-zinc-900 dark:text-zinc-100">
+            Notícias PT
+          </div>
+          <ThemeToggle />
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </header>
+
+      <ResumoDoDia />
+
+      <ArticleFeed articles={articles} />
+
+      <footer className="mt-10 text-center text-xs text-zinc-400">
+        Notícias PT — Agregador de notícias portuguesas
+      </footer>
     </div>
   );
 }
