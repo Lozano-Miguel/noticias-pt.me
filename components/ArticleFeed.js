@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ArticleCard from "./ArticleCard.js";
 import ArticleSkeleton from "./ArticleSkeleton.js";
+import Trending from "./Trending.js";
 
 const CATEGORIES = [
   "Todas",
@@ -108,6 +109,12 @@ export default function ArticleFeed({ articles }) {
 
   const totalCount = Array.isArray(articlesState) ? articlesState.length : 0;
 
+  function handleTrendingSearch(word) {
+    setSearchInput(word);
+    setSearchQuery(word);
+    setPage(1);
+  }
+
   return (
     <>
       <div className="px-4 pb-1 pt-3">
@@ -152,6 +159,8 @@ export default function ArticleFeed({ articles }) {
           </button>
         ) : null}
       </div>
+
+      <Trending onSearch={handleTrendingSearch} />
 
       {searchQuery === "" ? (
         <>
