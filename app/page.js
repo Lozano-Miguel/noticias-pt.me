@@ -1,5 +1,6 @@
 import supabase from "../lib/supabase.js";
 import ArticleFeed from "../components/ArticleFeed.js";
+import ChatBot from "../components/ChatBot.js";
 import ResumoDoDia from "../components/ResumoDoDia.js";
 import ThemeToggle from "../components/ThemeToggle.js";
 
@@ -30,6 +31,8 @@ export default async function Page() {
       <footer className="mt-10 text-center text-xs text-zinc-400">
         Notícias PT — Agregador de notícias portuguesas
       </footer>
+
+      <ChatBot />
     </div>
   );
 }
