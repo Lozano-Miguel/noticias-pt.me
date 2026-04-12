@@ -7,6 +7,22 @@ export default function ArticleCard({ article }) {
       })
     : null;
 
+  async function handleShare() {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: article.title,
+          url: article.url,
+        });
+      } catch (err) {
+        // user cancelled, do nothing
+      }
+    } else {
+      await navigator.clipboard.writeText(article.url);
+      alert("Link copiado!");
+    }
+  }
+
   return (
     <article className="w-full overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-200 hover:-translate-y-1 hover:shadow-md">
       {article?.image_url ? (
@@ -54,7 +70,32 @@ export default function ArticleCard({ article }) {
         ) : null}
 
         {publishedLabel ? (
-          <div className="pt-1 text-xs text-gray-500">{publishedLabel}</div>
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-xs text-zinc-400">{publishedLabel}</span>
+            <button
+              type="button"
+              onClick={handleShare}
+              className="ml-auto text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-1"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+            </button>
+          </div>
         ) : null}
       </div>
     </article>

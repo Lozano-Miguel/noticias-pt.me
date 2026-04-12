@@ -4,14 +4,12 @@ import supabase from "../../../lib/supabase.js";
 
 export async function GET() {
   try {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const startOfTodayIso = startOfToday.toISOString();
+    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
     const { data: existingSummaries, error: existingError } = await supabase
       .from("summaries")
       .select("*")
-      .gte("created_at", startOfTodayIso)
+      .gte("created_at", threeHoursAgo)
       .order("created_at", { ascending: false })
       .limit(1);
 
