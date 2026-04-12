@@ -4,9 +4,6 @@ Notícias PT is a Portuguese news aggregator web application built with Next.js,
 
 Live: https://noticias-pt.me
 
-## Screenshot
-
-![Screenshot placeholder](./screenshot.png)
 
 ## Features
 
