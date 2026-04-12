@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import supabase from "../../../lib/supabase.js";
+import deduplicateArticles from "../../../lib/deduplicate.js";
 
 export async function GET(request) {
   try {
@@ -35,7 +36,9 @@ export async function GET(request) {
       throw error;
     }
 
-    return NextResponse.json(data ?? []);
+    const deduplicated = deduplicateArticles(data ?? []);
+
+    return NextResponse.json(deduplicated);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -32,6 +32,12 @@ export default function ArticleCard({ article }) {
           ) : null}
         </div>
 
+        {article?.also_in?.length > 0 ? (
+          <div className="text-xs text-zinc-400 dark:text-zinc-500">
+            Também em: {article.also_in.join(", ")}
+          </div>
+        ) : null}
+
         <a
           href={article?.url}
           target="_blank"

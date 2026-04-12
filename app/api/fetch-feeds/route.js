@@ -11,13 +11,18 @@ export async function GET() {
   const failed = [];
 
   try {
-    await supabase
-      .from("articles")
+    const cleanupDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+    const { error: cleanupError } = await supabase
+      .from('articles')
       .delete()
-      .lt(
-        "published_at",
-        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      );
+      .lt('published_at', cleanupDate)
+
+    if (cleanupError) {
+      console.error('Cleanup error:', cleanupError.message)
+    }
+
+    console.log('Cleanup done, cutoff:', cleanupDate)
   } catch (error) {
     console.log("FAILED: delete old articles - " + error.message);
   }
