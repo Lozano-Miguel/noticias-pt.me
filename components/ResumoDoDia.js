@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 export default function ResumoDoDia() {
   const [summary, setSummary] = useState(null);
+  const [points, setPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(true);
 
@@ -16,6 +17,7 @@ export default function ResumoDoDia() {
         const data = await res.json();
         if (!cancelled) {
           setSummary(data.summary);
+          setPoints(data.summary?.points || []);
         }
       } finally {
         if (!cancelled) {
@@ -66,9 +68,30 @@ export default function ResumoDoDia() {
           {loading ? (
             <div className="text-sm text-zinc-400">A gerar resumo...</div>
           ) : summary ? (
-            <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-              {summary.content}
-            </p>
+            points.length > 0 ? (
+              <div className="space-y-0">
+                {points.map((point, i) => (
+                  <div key={i} className="flex items-start gap-2 py-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
+                    <span className="text-xs font-bold text-zinc-300 dark:text-zinc-600 mt-0.5 shrink-0">{i + 1}</span>
+                    <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300 flex-1">{point.text}</p>
+                    {point.url && (
+                      <a
+                        href={point.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-zinc-300 dark:text-zinc-600 hover:text-zinc-500 dark:hover:text-zinc-400 transition-colors shrink-0 mt-0.5 text-sm"
+                      >
+                        ↗
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                {summary.content}
+              </p>
+            )
           ) : null}
 
           <div className="mt-4 text-xs text-zinc-500">

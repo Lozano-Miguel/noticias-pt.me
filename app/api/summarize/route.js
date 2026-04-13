@@ -2,7 +2,102 @@ import { NextResponse } from "next/server";
 
 import supabase from "../../../lib/supabase.js";
 
-export async function GET() {
+const SUMMARY_STOPWORDS = new Set([
+  "para",
+  "como",
+  "mais",
+  "pelo",
+  "pela",
+  "este",
+  "esta",
+  "esse",
+  "essa",
+  "entre",
+  "quando",
+  "sobre",
+  "após",
+  "numa",
+  "with",
+  "that",
+  "from",
+  "have",
+  "this",
+  "they",
+  "were",
+  "been",
+  "will",
+  "their",
+  "than",
+  "também",
+  "seria",
+  "sendo",
+  "pela",
+  "pelos",
+  "pelas",
+  "foram",
+  "está",
+  "numa",
+  "seus",
+  "suas",
+  "isso",
+  "onde",
+  "quem",
+]);
+
+function extractTopWords(text, limit = 3) {
+  const words = (text || "")
+    .toLowerCase()
+    .replace(/[^a-zà-ÿ0-9\s]/gi, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((word) => word.length >= 4 && !SUMMARY_STOPWORDS.has(word));
+
+  const counts = words.reduce((acc, word) => {
+    acc[word] = (acc[word] || 0) + 1;
+    return acc;
+  }, {});
+
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit)
+    .map(([word]) => word);
+}
+
+async function matchSummaryPoints(text, sinceIso) {
+  const points = (text || "")
+    .split(/\d+\.\s/)
+    .map((point) => point.trim())
+    .filter(Boolean);
+
+  const matchedPoints = [];
+
+  for (const pointText of points) {
+    const words = extractTopWords(pointText);
+    let url = null;
+
+    if (words.length > 0) {
+      const filters = words.map((w) => `title.ilike.%${w}%`).join(",");
+      const { data: matchedArticles, error: matchError } = await supabase
+        .from("articles")
+        .select("url")
+        .gte("published_at", sinceIso)
+        .or(filters)
+        .limit(1);
+
+      if (matchError) {
+        console.error("Summary point match error:", matchError.message);
+      } else if (matchedArticles?.length) {
+        url = matchedArticles[0]?.url || null;
+      }
+    }
+
+    matchedPoints.push({ text: pointText, url });
+  }
+
+  return matchedPoints;
+}
+
+export async function GET(request) {
   try {
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
@@ -18,7 +113,22 @@ export async function GET() {
     }
 
     if (existingSummaries?.length) {
-      return NextResponse.json({ summary: existingSummaries[0] });
+      const existingSummary = existingSummaries[0];
+      let points = [];
+
+      if (existingSummary?.points) {
+        if (typeof existingSummary.points === "string") {
+          try {
+            points = JSON.parse(existingSummary.points);
+          } catch {
+            points = [];
+          }
+        } else if (Array.isArray(existingSummary.points)) {
+          points = existingSummary.points;
+        }
+      }
+
+      return NextResponse.json({ summary: { ...existingSummary, points } });
     }
 
     const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -63,17 +173,19 @@ export async function GET() {
     }
 
     const text = result.candidates[0].content.parts[0].text;
+    const points = await matchSummaryPoints(text, sinceIso);
+    const createdAt = new Date().toISOString();
 
     const { error: insertError } = await supabase
       .from("summaries")
-      .insert({ content: text });
+      .insert({ content: text, points: JSON.stringify(points) });
 
     if (insertError) {
       throw insertError;
     }
 
     return NextResponse.json({
-      summary: { content: text, created_at: new Date().toISOString() },
+      summary: { content: text, points, created_at: createdAt },
     });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

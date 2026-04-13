@@ -1,12 +1,33 @@
 export default function ArticleCard({ article }) {
   const publishedLabel = article?.published_at
-    ? new Date(article.published_at).toLocaleString("pt-PT", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+    ? (() => {
+        const date = new Date(article.published_at);
+
+        const timeStr = date.toLocaleTimeString("pt-PT", {
+          timeZone: "Europe/Lisbon",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        const hasTime = timeStr !== "00:00";
+
+        const formatted = hasTime
+          ? date.toLocaleString("pt-PT", {
+              timeZone: "Europe/Lisbon",
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : date.toLocaleDateString("pt-PT", {
+              timeZone: "Europe/Lisbon",
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            });
+
+        return formatted;
+      })()
     : null;
 
   async function handleShare() {
