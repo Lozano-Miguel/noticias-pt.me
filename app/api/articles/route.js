@@ -9,6 +9,7 @@ export async function GET(request) {
     const category = searchParams.get("category");
     const categories = searchParams.get("categories");
     const source = searchParams.get("source");
+    const sources = searchParams.get("sources");
     const search = searchParams.get("search");
 
     let query = supabase
@@ -30,7 +31,16 @@ export async function GET(request) {
       query = query.eq("category", category);
     }
 
-    if (source && source !== "Todas") {
+    if (sources) {
+      const sourcesArray = sources
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      if (sourcesArray.length) {
+        query = query.in("source", sourcesArray);
+      }
+    } else if (source && source !== "Todas") {
       query = query.eq("source", source);
     }
 

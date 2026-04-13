@@ -37,7 +37,7 @@ const SOURCES = [
 export default function ArticleFeed({ articles }) {
   const [articlesState, setArticlesState] = useState(articles);
   const [activeCategories, setActiveCategories] = useState([]);
-  const [activeSource, setActiveSource] = useState("Todas");
+  const [activeSources, setActiveSources] = useState([]);
   const [showSources, setShowSources] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -57,8 +57,10 @@ export default function ArticleFeed({ articles }) {
       } else if (activeCategories.length > 1) {
         params.set("categories", activeCategories.join(","));
       }
-      if (activeSource !== "Todas") {
-        params.set("source", activeSource);
+      if (activeSources.length === 1) {
+        params.set("source", activeSources[0]);
+      } else if (activeSources.length > 1) {
+        params.set("sources", activeSources.join(","));
       }
       if (searchQuery !== "") {
         params.set("search", searchQuery);
@@ -79,7 +81,7 @@ export default function ArticleFeed({ articles }) {
   useEffect(() => {
     setPage(1);
     fetchArticles();
-  }, [activeCategories, activeSource, searchQuery]);
+  }, [activeCategories, activeSources, searchQuery]);
 
   const filteredArticles = useMemo(
     () => (Array.isArray(articlesState) ? articlesState : []),
@@ -218,13 +220,29 @@ export default function ArticleFeed({ articles }) {
           {showSources ? (
             <div className="flex gap-2 overflow-x-auto border-b border-zinc-100 px-4 py-2 scrollbar-hide dark:border-zinc-800">
               {SOURCES.map((sourceName) => {
-                const isActive = sourceName === activeSource;
+                const isActive =
+                  sourceName === "Todas"
+                    ? activeSources.length === 0
+                    : activeSources.includes(sourceName);
 
                 return (
                   <button
                     key={sourceName}
                     type="button"
-                    onClick={() => setActiveSource(sourceName)}
+                    onClick={() => {
+                      if (sourceName === "Todas") {
+                        setActiveSources([]);
+                        return;
+                      }
+
+                      setActiveSources((prev) => {
+                        if (prev.includes(sourceName)) {
+                          return prev.filter((item) => item !== sourceName);
+                        }
+
+                        return [...prev, sourceName];
+                      });
+                    }}
                     className={[
                       "shrink-0 rounded-full px-3 py-1 text-sm",
                       isActive
