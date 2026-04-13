@@ -1,9 +1,11 @@
 export default function ArticleCard({ article }) {
   const publishedLabel = article?.published_at
-    ? new Date(article.published_at).toLocaleDateString("pt-PT", {
-        day: "2-digit",
-        month: "long",
+    ? new Date(article.published_at).toLocaleString("pt-PT", {
+        day: "numeric",
+        month: "short",
         year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       })
     : null;
 
@@ -44,6 +46,11 @@ export default function ArticleCard({ article }) {
           {article?.source ? (
             <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-200">
               {article.source}
+            </span>
+          ) : null}
+          {article?.is_paywall ? (
+            <span className="text-xs px-2 py-0.5 rounded-full text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-zinc-700">
+              Acesso pago
             </span>
           ) : null}
         </div>

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import supabase from "../../../lib/supabase.js";
 import SOURCES from "../../../lib/sources.js";
 import fetchAndSave from "../../../lib/fetchFeed.js";
+import fetchAndSaveEco from "../../../lib/fetchEco.js";
 
 export const maxDuration = 300;
 
@@ -60,6 +61,9 @@ export async function GET() {
       failed.push(source.name + " - " + reason);
     }
   });
+
+  await fetchAndSaveEco();
+  succeeded.push("ECO Sapo");
 
   try {
     await supabase.rpc("cleanup_old_articles");

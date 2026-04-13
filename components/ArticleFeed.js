@@ -22,6 +22,7 @@ const CATEGORIES = [
 
 const SOURCES = [
   "Todas",
+  "ECO Sapo",
   "Notícias ao Minuto",
   "RTP Notícias",
   "Renascença",
@@ -30,11 +31,12 @@ const SOURCES = [
   "Record",
   "Jornal de Negócios",
   "Observador",
+  "Público",
 ];
 
 export default function ArticleFeed({ articles }) {
   const [articlesState, setArticlesState] = useState(articles);
-  const [activeCategory, setActiveCategory] = useState("Todas");
+  const [activeCategories, setActiveCategories] = useState([]);
   const [activeSource, setActiveSource] = useState("Todas");
   const [showSources, setShowSources] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,8 +52,10 @@ export default function ArticleFeed({ articles }) {
 
     try {
       const params = new URLSearchParams();
-      if (activeCategory !== "Todas") {
-        params.set("category", activeCategory);
+      if (activeCategories.length === 1) {
+        params.set("category", activeCategories[0]);
+      } else if (activeCategories.length > 1) {
+        params.set("categories", activeCategories.join(","));
       }
       if (activeSource !== "Todas") {
         params.set("source", activeSource);
@@ -75,7 +79,7 @@ export default function ArticleFeed({ articles }) {
   useEffect(() => {
     setPage(1);
     fetchArticles();
-  }, [activeCategory, activeSource, searchQuery]);
+  }, [activeCategories, activeSource, searchQuery]);
 
   const filteredArticles = useMemo(
     () => (Array.isArray(articlesState) ? articlesState : []),
@@ -167,13 +171,29 @@ export default function ArticleFeed({ articles }) {
           <div className="flex items-center gap-2 px-4 py-3">
             <div className="scrollbar-hide flex min-w-0 flex-1 gap-2 overflow-x-auto">
               {CATEGORIES.map((category) => {
-                const isActive = category === activeCategory;
+                const isActive =
+                  category === "Todas"
+                    ? activeCategories.length === 0
+                    : activeCategories.includes(category);
 
                 return (
                   <button
                     key={category}
                     type="button"
-                    onClick={() => setActiveCategory(category)}
+                    onClick={() => {
+                      if (category === "Todas") {
+                        setActiveCategories([]);
+                        return;
+                      }
+
+                      setActiveCategories((prev) => {
+                        if (prev.includes(category)) {
+                          return prev.filter((item) => item !== category);
+                        }
+
+                        return [...prev, category];
+                      });
+                    }}
                     className={[
                       "shrink-0 rounded-full px-3 py-1 text-sm",
                       isActive
@@ -273,6 +293,22 @@ export default function ArticleFeed({ articles }) {
                     >
                       {article.title}
                     </a>
+                    {article.description ? (
+                      <p className="hidden md:block text-xs text-zinc-400 dark:text-zinc-500 mt-0.5 line-clamp-2">
+                        {article.description}
+                      </p>
+                    ) : null}
+                    {article.published_at ? (
+                      <div className="hidden md:block text-xs text-zinc-400 mt-1">
+                        {new Date(article.published_at).toLocaleString("pt-PT", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>

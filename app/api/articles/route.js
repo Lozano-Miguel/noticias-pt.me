@@ -7,6 +7,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
+    const categories = searchParams.get("categories");
     const source = searchParams.get("source");
     const search = searchParams.get("search");
 
@@ -16,7 +17,16 @@ export async function GET(request) {
       .order("published_at", { ascending: false })
       .limit(100);
 
-    if (category && category !== "Todas") {
+    if (categories) {
+      const categoriesArray = categories
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      if (categoriesArray.length) {
+        query = query.in("category", categoriesArray);
+      }
+    } else if (category && category !== "Todas") {
       query = query.eq("category", category);
     }
 
