@@ -1,34 +1,32 @@
 export default function ArticleCard({ article }) {
-  const publishedLabel = article?.published_at
-    ? (() => {
-        const date = new Date(article.published_at);
+  const formatDate = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    
+    // Check if time info exists by seeing if the ISO string has a non-zero time
+    // RSS feeds without time default to T00:00:00Z
+    const hasRealTime = !dateString.endsWith('T00:00:00.000Z') && 
+                        !dateString.endsWith('T00:00:00Z') &&
+                        !(date.getUTCHours() === 0 && date.getUTCMinutes() === 0)
+    
+    if (hasRealTime) {
+      return date.toLocaleString('pt-PT', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    }
+    
+    return date.toLocaleDateString('pt-PT', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })
+  }
 
-        const timeStr = date.toLocaleTimeString("pt-PT", {
-          timeZone: "Europe/Lisbon",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        const hasTime = timeStr !== "00:00";
-
-        const formatted = hasTime
-          ? date.toLocaleString("pt-PT", {
-              timeZone: "Europe/Lisbon",
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : date.toLocaleDateString("pt-PT", {
-              timeZone: "Europe/Lisbon",
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            });
-
-        return formatted;
-      })()
-    : null;
+  const publishedLabel = formatDate(article?.published_at);
 
   async function handleShare() {
     if (navigator.share) {
@@ -47,7 +45,7 @@ export default function ArticleCard({ article }) {
   }
 
   return (
-    <article className="w-full overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-200 hover:-translate-y-1 hover:shadow-md">
+    <article className="bg-white dark:bg-zinc-900 rounded-lg overflow-hidden border border-zinc-100 dark:border-zinc-800">
       {article?.image_url ? (
         <img
           src={article.image_url}
@@ -60,12 +58,12 @@ export default function ArticleCard({ article }) {
       <div className="space-y-3 p-3 sm:p-4">
         <div className="flex flex-wrap items-center gap-2">
           {article?.category ? (
-            <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
+            <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-zinc-700 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-zinc-300 ring-1 ring-inset ring-blue-200">
               {article.category}
             </span>
           ) : null}
           {article?.source ? (
-            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-200">
+            <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-zinc-700 px-2.5 py-1 text-xs font-medium text-gray-700 dark:text-zinc-400 ring-1 ring-inset ring-gray-200">
               {article.source}
             </span>
           ) : null}
@@ -86,20 +84,20 @@ export default function ArticleCard({ article }) {
           href={article?.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block break-words text-base font-semibold leading-snug text-gray-900 hover:underline sm:text-lg"
+          className="block break-words text-base font-semibold leading-snug text-gray-900 dark:text-zinc-100 hover:underline sm:text-lg"
         >
           {article?.title}
         </a>
 
         {article?.description ? (
-          <p className="line-clamp-3 break-words text-sm leading-relaxed text-gray-600">
+          <p className="line-clamp-3 break-words text-sm leading-relaxed text-gray-600 dark:text-zinc-400">
             {article.description}
           </p>
         ) : null}
 
         {publishedLabel ? (
           <div className="flex items-center justify-between mt-3">
-            <span className="text-xs text-zinc-400">{publishedLabel}</span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">{publishedLabel}</span>
             <button
               type="button"
               onClick={handleShare}
