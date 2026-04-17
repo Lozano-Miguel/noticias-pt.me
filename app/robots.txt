@@ -1,0 +1,13 @@
+import { MetadataRoute } from 'next';
+
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: {
+      userAgent: '*',
+      allow: '/',
+      // If you add private routes later (like /admin or /settings), you can add:
+      // disallow: '/private/',
+    },
+    sitemap: 'https://noticias-pt.me/sitemap.xml',
+  };
+}
