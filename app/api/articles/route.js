@@ -14,9 +14,11 @@ export async function GET(request) {
 
     let query = supabase
       .from("articles")
-      .select("*")
+      .select(
+        "id, title, description, url, image_url, published_at, source, category, is_paywall",
+      )
       .order("published_at", { ascending: false })
-      .limit(100);
+      .limit(60);
 
     if (categories) {
       const categoriesArray = categories
