@@ -101,6 +101,7 @@ export default function ArticleCard({ article }) {
             <button
               type="button"
               onClick={handleShare}
+              aria-label="Partilhar"
               className="ml-auto text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-1"
             >
               <svg
