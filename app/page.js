@@ -1,17 +1,21 @@
-import supabase from "../lib/supabase.js";
+import sql from "../lib/db";
 import ArticleFeed from "../components/ArticleFeed.js";
 import ChatBot from "../components/ChatBot.js";
 import ResumoDoDia from "../components/ResumoDoDia.js";
 import ThemeToggle from "../components/ThemeToggle.js";
 
 export default async function Page() {
-  const { data, error } = await supabase
-    .from("articles")
-    .select("*")
-    .order("published_at", { ascending: false })
-    .limit(60);
-
-  const articles = error ? [] : data ?? [];
+  let articles = [];
+  try {
+    articles = await sql`
+      select *
+      from articles
+      order by published_at desc
+      limit 60
+    `;
+  } catch {
+    articles = [];
+  }
 
   return (
     <div className="min-h-dvh">

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import supabase from "../../../lib/supabase.js";
+import sql from "../../../lib/db";
 import deduplicateArticles from "../../../lib/deduplicate.js";
 
 export async function GET(request) {
@@ -12,13 +12,7 @@ export async function GET(request) {
     const sources = searchParams.get("sources");
     const search = searchParams.get("search");
 
-    let query = supabase
-      .from("articles")
-      .select(
-        "id, title, description, url, image_url, published_at, source, category, is_paywall",
-      )
-      .order("published_at", { ascending: false })
-      .limit(60);
+    const whereClauses = [];
 
     if (categories) {
       const categoriesArray = categories
@@ -27,10 +21,10 @@ export async function GET(request) {
         .filter(Boolean);
 
       if (categoriesArray.length) {
-        query = query.in("category", categoriesArray);
+        whereClauses.push(sql`category in ${sql(categoriesArray)}`);
       }
     } else if (category && category !== "Todas") {
-      query = query.eq("category", category);
+      whereClauses.push(sql`category = ${category}`);
     }
 
     if (sources) {
@@ -40,23 +34,28 @@ export async function GET(request) {
         .filter(Boolean);
 
       if (sourcesArray.length) {
-        query = query.in("source", sourcesArray);
+        whereClauses.push(sql`source in ${sql(sourcesArray)}`);
       }
     } else if (source && source !== "Todas") {
-      query = query.eq("source", source);
+      whereClauses.push(sql`source = ${source}`);
     }
 
     if (search && search !== "") {
-      query = query.or(
-        `title.ilike.%${search}%,description.ilike.%${search}%`,
+      const pattern = `%${search}%`;
+      whereClauses.push(
+        sql`(title ilike ${pattern} or description ilike ${pattern})`,
       );
     }
 
-    const { data, error } = await query;
-
-    if (error) {
-      throw error;
-    }
+    const data = await sql`
+      select id, title, description, url, image_url, published_at, source, category, is_paywall
+      from articles
+      ${whereClauses.length
+        ? sql`where ${sql.join(whereClauses, sql` and `)}`
+        : sql``}
+      order by published_at desc
+      limit 60
+    `;
 
     const deduplicated = deduplicateArticles(data ?? []);
 

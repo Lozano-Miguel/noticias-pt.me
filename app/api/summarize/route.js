@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import supabase from "../../../lib/supabase.js";
+import sql from "../../../lib/db";
 
 const SUMMARY_STOPWORDS = new Set([
   "para",
@@ -76,18 +76,24 @@ async function matchSummaryPoints(text, sinceIso) {
     let url = null;
 
     if (words.length > 0) {
-      const filters = words.map((w) => `title.ilike.%${w}%`).join(",");
-      const { data: matchedArticles, error: matchError } = await supabase
-        .from("articles")
-        .select("url")
-        .gte("published_at", sinceIso)
-        .or(filters)
-        .limit(1);
+      try {
+        const likeClauses = words.map((word) => {
+          const pattern = `%${word}%`;
+          return sql`title ilike ${pattern}`;
+        });
+        const matchedArticles = await sql`
+          select url
+          from articles
+          where published_at >= ${sinceIso}
+            and (${sql.join(likeClauses, sql` or `)})
+          limit 1
+        `;
 
-      if (matchError) {
+        if (matchedArticles?.length) {
+          url = matchedArticles[0]?.url || null;
+        }
+      } catch (matchError) {
         console.error("Summary point match error:", matchError.message);
-      } else if (matchedArticles?.length) {
-        url = matchedArticles[0]?.url || null;
       }
     }
 
@@ -101,16 +107,13 @@ export async function GET(request) {
   try {
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 
-    const { data: existingSummaries, error: existingError } = await supabase
-      .from("summaries")
-      .select("*")
-      .gte("created_at", threeHoursAgo)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    if (existingError) {
-      throw existingError;
-    }
+    const existingSummaries = await sql`
+      select *
+      from summaries
+      where created_at >= ${threeHoursAgo}
+      order by created_at desc
+      limit 1
+    `;
 
     if (existingSummaries?.length) {
       const existingSummary = existingSummaries[0];
@@ -133,16 +136,13 @@ export async function GET(request) {
 
     const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: articles, error: articlesError } = await supabase
-      .from("articles")
-      .select("title, source")
-      .gte("published_at", sinceIso)
-      .order("published_at", { ascending: false })
-      .limit(80);
-
-    if (articlesError) {
-      throw articlesError;
-    }
+    const articles = await sql`
+      select title, source
+      from articles
+      where published_at >= ${sinceIso}
+      order by published_at desc
+      limit 80
+    `;
 
     const prompt =
       "És um jornalista português sénior. Com base nas seguintes notícias " +
@@ -176,13 +176,10 @@ export async function GET(request) {
     const points = await matchSummaryPoints(text, sinceIso);
     const createdAt = new Date().toISOString();
 
-    const { error: insertError } = await supabase
-      .from("summaries")
-      .insert({ content: text, points: JSON.stringify(points) });
-
-    if (insertError) {
-      throw insertError;
-    }
+    await sql`
+      insert into summaries (content, points)
+      values (${text}, ${JSON.stringify(points)})
+    `;
 
     return NextResponse.json({
       summary: { content: text, points, created_at: createdAt },

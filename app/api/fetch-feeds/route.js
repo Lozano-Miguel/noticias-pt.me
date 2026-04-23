@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import supabase from "../../../lib/supabase.js";
+import sql from "../../../lib/db";
 import SOURCES from "../../../lib/sources.js";
 import fetchAndSave from "../../../lib/fetchFeed.js";
 import fetchAndSaveEco from "../../../lib/fetchEco.js";
@@ -14,14 +14,10 @@ export async function GET() {
   try {
     const cleanupDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
-    const { error: cleanupError } = await supabase
-      .from('articles')
-      .delete()
-      .lt('published_at', cleanupDate)
-
-    if (cleanupError) {
-      console.error('Cleanup error:', cleanupError.message)
-    }
+    await sql`
+      delete from articles
+      where published_at < ${cleanupDate}
+    `;
 
     console.log('Cleanup done, cutoff:', cleanupDate)
   } catch (error) {
@@ -66,7 +62,7 @@ export async function GET() {
   succeeded.push("ECO Sapo");
 
   try {
-    await supabase.rpc("cleanup_old_articles");
+    await sql`select cleanup_old_articles()`;
   } catch (error) {
     console.log("FAILED: cleanup_old_articles - " + error.message);
   }

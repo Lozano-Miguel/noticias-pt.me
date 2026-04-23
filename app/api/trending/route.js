@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import supabase from "../../../lib/supabase.js";
+import sql from "../../../lib/db";
 
 const STOPWORDS = new Set([
   "de",
@@ -87,15 +87,12 @@ export async function GET() {
   try {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const { data, error } = await supabase
-      .from("articles")
-      .select("title")
-      .gte("published_at", since)
-      .limit(200);
-
-    if (error) {
-      throw error;
-    }
+    const data = await sql`
+      select title
+      from articles
+      where published_at >= ${since}
+      limit 200
+    `;
 
     const bigString = (data ?? [])
       .map((row) => row.title ?? "")
