@@ -1,12 +1,14 @@
 export default function ArticleCard({ article }) {
   const formatDate = (dateString) => {
     if (!dateString) return ''
-    const date = new Date(dateString)
+    const date = dateString instanceof Date ? dateString : new Date(dateString)
+    if (Number.isNaN(date.getTime())) return ''
+    const isoDate = typeof dateString === 'string' ? dateString : date.toISOString()
     
     // Check if time info exists by seeing if the ISO string has a non-zero time
     // RSS feeds without time default to T00:00:00Z
-    const hasRealTime = !dateString.endsWith('T00:00:00.000Z') && 
-                        !dateString.endsWith('T00:00:00Z') &&
+    const hasRealTime = !isoDate.endsWith('T00:00:00.000Z') && 
+                        !isoDate.endsWith('T00:00:00Z') &&
                         !(date.getUTCHours() === 0 && date.getUTCMinutes() === 0)
     
     if (hasRealTime) {
