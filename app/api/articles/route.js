@@ -12,47 +12,42 @@ export async function GET(request) {
     const sources = searchParams.get("sources");
     const search = searchParams.get("search");
 
-    const whereClauses = [];
+    let categoriesArray = [];
+    let sourcesArray = [];
 
     if (categories) {
-      const categoriesArray = categories
+      categoriesArray = categories
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean);
-
-      if (categoriesArray.length) {
-        whereClauses.push(sql`category in ${sql(categoriesArray)}`);
-      }
     } else if (category && category !== "Todas") {
-      whereClauses.push(sql`category = ${category}`);
+      categoriesArray = [category];
     }
 
     if (sources) {
-      const sourcesArray = sources
+      const parsedSourcesArray = sources
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean);
-
-      if (sourcesArray.length) {
-        whereClauses.push(sql`source in ${sql(sourcesArray)}`);
-      }
+      sourcesArray = parsedSourcesArray;
     } else if (source && source !== "Todas") {
-      whereClauses.push(sql`source = ${source}`);
+      sourcesArray = [source];
     }
 
-    if (search && search !== "") {
-      const pattern = `%${search}%`;
-      whereClauses.push(
-        sql`(title ilike ${pattern} or description ilike ${pattern})`,
-      );
-    }
+    const searchTerm = search?.trim() || "";
+    const searchPattern = searchTerm ? `%${searchTerm}%` : null;
 
     const data = await sql`
       select id, title, description, url, image_url, published_at, source, category, is_paywall
       from articles
-      ${whereClauses.length
-        ? sql`where ${sql.join(whereClauses, sql` and `)}`
-        : sql``}
+      where
+        (${categoriesArray.length === 0} or category = any(${categoriesArray}))
+        and (${sourcesArray.length === 0} or source = any(${sourcesArray}))
+        and (
+          ${searchPattern}::text is null
+          or title ilike ${searchPattern}
+          or coalesce(description, '') ilike ${searchPattern}
+        )
       order by published_at desc
       limit 60
     `;

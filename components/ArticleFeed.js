@@ -69,9 +69,13 @@ export default function ArticleFeed({ articles }) {
       const url = qs ? `/api/articles?${qs}` : "/api/articles";
 
       const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch articles: ${res.status}`);
+      }
       const data = await res.json();
       setArticlesState(data);
-    } catch {
+    } catch (error) {
+      console.error("fetchArticles error:", error);
       setArticlesState([]);
     } finally {
       setLoading(false);
