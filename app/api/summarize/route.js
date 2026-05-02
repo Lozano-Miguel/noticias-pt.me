@@ -153,26 +153,31 @@ export async function GET(request) {
       "Notícias:\n" +
       (articles ?? []).map((a) => `- ${a.title} (${a.source})`).join("\n");
 
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-    if (!geminiApiKey) {
-      throw new Error("Missing GEMINI_API_KEY");
+    const groqApiKey = process.env.GROQ_API_KEY;
+    if (!groqApiKey) {
+      throw new Error("Missing GROQ_API_KEY");
     }
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${groqApiKey}`,
       },
-    );
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 1024,
+        temperature: 0.3,
+      }),
+    });
 
-    const result = await geminiRes.json();
-    if (!geminiRes.ok) {
-      throw new Error(result?.error?.message ?? "Gemini request failed");
+    const result = await groqRes.json();
+    if (!groqRes.ok) {
+      throw new Error(result?.error?.message ?? "Groq request failed");
     }
 
-    const text = result.candidates[0].content.parts[0].text;
+    const text = result.choices[0].message.content;
     const points = await matchSummaryPoints(text, sinceIso);
     const createdAt = new Date().toISOString();
 

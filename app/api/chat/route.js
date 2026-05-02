@@ -4,8 +4,8 @@ export async function POST(request) {
   try {
     const { messages, context } = await request.json();
 
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-    if (!geminiApiKey) throw new Error("Missing GEMINI_API_KEY");
+    const groqApiKey = process.env.GROQ_API_KEY;
+    if (!groqApiKey) throw new Error("Missing GROQ_API_KEY");
 
     const systemPrompt =
       "És um assistente de notícias português. Respondes sempre em português europeu. " +
@@ -13,36 +13,28 @@ export async function POST(request) {
       "Baseia as tuas respostas APENAS nas seguintes notícias de hoje:\n\n" +
       context;
 
-    const contents = [
-      { role: "user", parts: [{ text: systemPrompt }] },
-      {
-        role: "model",
-        parts: [
-          {
-            text: "Entendido. Estou pronto para responder com base nas notícias de hoje.",
-          },
+    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${groqApiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages,
         ],
-      },
-      ...messages.map((m) => ({
-        role: m.role === "assistant" ? "model" : "user",
-        parts: [{ text: m.content }],
-      })),
-    ];
+        max_tokens: 1024,
+        temperature: 0.5,
+      }),
+    });
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents }),
-      },
-    );
+    const result = await groqRes.json();
+    if (!groqRes.ok)
+      throw new Error(result?.error?.message ?? "Groq request failed");
 
-    const result = await geminiRes.json();
-    if (!geminiRes.ok)
-      throw new Error(result?.error?.message ?? "Gemini request failed");
-
-    const text = result.candidates[0].content.parts[0].text;
+    const text = result.choices[0].message.content;
 
     return NextResponse.json({ reply: text });
   } catch (error) {
