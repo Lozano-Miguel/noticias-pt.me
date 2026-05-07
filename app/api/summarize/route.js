@@ -2,65 +2,21 @@ import { NextResponse } from "next/server";
 
 import sql from "../../../lib/db";
 
-const SUMMARY_STOPWORDS = new Set([
-  "para",
-  "como",
-  "mais",
-  "pelo",
-  "pela",
-  "este",
-  "esta",
-  "esse",
-  "essa",
-  "entre",
-  "quando",
-  "sobre",
-  "após",
-  "numa",
-  "with",
-  "that",
-  "from",
-  "have",
-  "this",
-  "they",
-  "were",
-  "been",
-  "will",
-  "their",
-  "than",
-  "também",
-  "seria",
-  "sendo",
-  "pela",
-  "pelos",
-  "pelas",
-  "foram",
-  "está",
-  "numa",
-  "seus",
-  "suas",
-  "isso",
-  "onde",
-  "quem",
-]);
-
-function extractTopWords(text, limit = 3) {
-  const words = (text || "")
+const extractWords = (text) => {
+  if (!text || typeof text !== 'string') return []
+  
+  const stopwords = ['para','como','mais','pelo','pela','este','esta',
+    'esse','essa','entre','quando','sobre','após','numa','that','from',
+    'have','this','they','were','been','will','their','than','também',
+    'seria','sendo','pelos','pelas','foram','está','seus','suas','isso',
+    'onde','quem','com','que','por','uma','uns','umas','dos','das',
+    'nos','nas','pelo','pela','num','duma','dum','nuns','numas']
+  
+  return text
     .toLowerCase()
-    .replace(/[^a-zà-ÿ0-9\s]/gi, " ")
+    .replace(/[^a-záàâãéèêíïóôõöúüçñ\s]/gi, '')
     .split(/\s+/)
-    .filter(Boolean)
-    .filter((word) => word.length >= 4 && !SUMMARY_STOPWORDS.has(word));
-
-  const counts = words.reduce((acc, word) => {
-    acc[word] = (acc[word] || 0) + 1;
-    return acc;
-  }, {});
-
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, limit)
-    .map(([word]) => word);
+    .filter(w => w.length > 3 && !stopwords.includes(w))
 }
 
 async function matchSummaryPoints(text, sinceIso) {
@@ -72,29 +28,38 @@ async function matchSummaryPoints(text, sinceIso) {
   const matchedPoints = [];
 
   for (const pointText of points) {
-    const words = extractTopWords(pointText);
     let url = null;
 
-    if (words.length > 0) {
-      try {
-        const likeClauses = words.map((word) => {
-          const pattern = `%${word}%`;
-          return sql`title ilike ${pattern}`;
-        });
-        const matchedArticles = await sql`
-          select url
-          from articles
-          where published_at >= ${sinceIso}
-            and (${sql.join(likeClauses, sql` or `)})
-          limit 1
-        `;
+    const words = extractWords(pointText)
 
-        if (matchedArticles?.length) {
-          url = matchedArticles[0]?.url || null;
-        }
-      } catch (matchError) {
-        console.error("Summary point match error:", matchError.message);
+    if (!Array.isArray(words) || words.length === 0) {
+      matchedPoints.push({ text: pointText, url: null });
+      continue;
+    }
+
+    const orFilter = words
+      .slice(0, 3)
+      .map(w => `title.ilike.%${w}%`)
+      .join(',')
+
+    try {
+      const likeClauses = words.slice(0, 3).map((word) => {
+        const pattern = `%${word}%`;
+        return sql`title ilike ${pattern}`;
+      });
+      const matchedArticles = await sql`
+        select url
+        from articles
+        where published_at >= ${sinceIso}
+          and (${sql.join(likeClauses, sql` or `)})
+        limit 1
+      `;
+
+      if (matchedArticles?.length) {
+        url = matchedArticles[0]?.url || null;
       }
+    } catch (matchError) {
+      console.error("Summary point match error:", matchError.message);
     }
 
     matchedPoints.push({ text: pointText, url });
