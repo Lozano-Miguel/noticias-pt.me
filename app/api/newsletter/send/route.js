@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { Resend } from 'resend'
 
 import sql from "../../../../lib/db";
 
 export const maxDuration = 60;
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -136,21 +139,20 @@ export async function GET(request) {
         unsubscribeEmail: to,
       });
 
-      const emailRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${resendApiKey}`,
-        },
-        body: JSON.stringify({
-          from: "Notícias PT <resumo@noticias-pt.me>",
-          to,
-          subject: `Resumo do Dia — ${dateLabel}`,
-          html,
-        }),
-      });
+      const dateString = dateLabel;
 
-      if (emailRes.ok) {
+      const { error } = await resend.emails.send({
+        from: 'Notícias PT <resumo@noticias-pt.me>',
+        to: subscriber.email,
+        subject: 'Resumo do Dia — ' + dateString,
+        html
+      })
+
+      if (error) {
+        console.error('Failed to send to:', subscriber.email, error)
+      }
+
+      if (!error) {
         sent += 1;
       } else {
         failed += 1;
