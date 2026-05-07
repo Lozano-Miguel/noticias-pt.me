@@ -1,36 +1,14 @@
-export default async function sitemap() {
-  const baseUrl = 'https://noticias-pt.me';
-
-  const staticRoutes = [
+export default function sitemap() {
+  return [
     {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: 'always', 
-      priority: 1.0,
+      url: "https://noticias-pt.me",
+      changeFrequency: "hourly",
+      priority: 1,
     },
     {
-      url: `${baseUrl}/categoria/politica`,
-      lastModified: new Date(),
-      changeFrequency: 'hourly',
-      priority: 0.8,
+      url: "https://noticias-pt.me/sobre",
+      changeFrequency: "monthly",
+      priority: 0.5,
     },
-    {
-      url: `${baseUrl}/categoria/desporto`,
-      lastModified: new Date(),
-      changeFrequency: 'hourly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/categoria/economia`,
-      lastModified: new Date(),
-      changeFrequency: 'hourly',
-      priority: 0.8,
-    }
   ];
-
-  // (You can add your Supabase fetch logic here later just like before, 
-  // without the TypeScript 'MetadataRoute' strictness)
-  const dynamicRoutes = []; 
-
-  return [...staticRoutes, ...dynamicRoutes];
 }

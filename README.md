@@ -19,6 +19,9 @@ Live: https://noticias-pt.me
 - Dark/light mode with user preference detection
 - Mobile-first design
 - PWA ready
+- About page (`/sobre`) with FAQ + JSON-LD (Organization + FAQPage)
+- Newsletter subscription toast (slide-in) and daily email sending (Resend)
+- Static sitemap (`/sitemap.xml`) and robots rules (`/robots.txt`)
 
 ## Tech Stack
 
@@ -28,6 +31,7 @@ Live: https://noticias-pt.me
 | Tailwind CSS v3 | Utility-first styling and responsive UI |
 | PostgreSQL | Database for article storage |
 | Groq API | AI content generation for summaries and chat |
+| Resend API | Transactional email sending for newsletter |
 | Vercel | Production deployment platform |
 | cron-job.org | Scheduled RSS feed ingestion every 15 minutes |
 
@@ -46,11 +50,12 @@ cd noticias-pt
 npm install
 ```
 
-3. Configure environment variables in `.env.local`
+3. Configure environment variables in `.env.local` (see `.env.example`)
 
 ```env
 DATABASE_URL=
 GROQ_API_KEY=
+RESEND_API_KEY=
 ```
 
 4. Run the development server
@@ -67,6 +72,25 @@ Open `http://localhost:3000` in your browser to view the application.
 | --- | --- |
 | `DATABASE_URL` | PostgreSQL connection string |
 | `GROQ_API_KEY` | API key used to call the Groq AI service |
+| `RESEND_API_KEY` | API key used to send newsletter emails via Resend |
+
+## Newsletter
+
+This project includes a newsletter flow backed by the `newsletter_subscribers` table and a daily email job.
+
+### Endpoints
+
+- `POST /api/newsletter/subscribe`: subscribes an email (upsert; duplicates return `already_subscribed`)
+- `GET /api/newsletter/unsubscribe?email=...`: marks the subscriber as inactive and shows a simple HTML confirmation page
+- `GET /api/newsletter/send`: sends "Resumo do Dia" to all active subscribers (intended to be called by a cron job at 8am)
+
+### UI
+
+The subscription UI is a floating slide-in toast (`components/NewsletterSignup.js`) that appears after 7 seconds or after the user scrolls ~30% of the page. Closing the toast sets a 24h cooldown in `localStorage`.
+
+### Cron
+
+At 8am daily, call `GET https://noticias-pt.me/api/newsletter/send` from your scheduler.
 
 ## Project Structure
 
