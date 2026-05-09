@@ -2,24 +2,41 @@ import { NextResponse } from "next/server";
 
 import sql from "../../../lib/db";
 
-const extractWords = (text) => {
-  if (!text || typeof text !== 'string') return []
-  
-  const stopwords = ['para','como','mais','pelo','pela','este','esta',
-    'esse','essa','entre','quando','sobre','após','numa','that','from',
-    'have','this','they','were','been','will','their','than','também',
-    'seria','sendo','pelos','pelas','foram','está','seus','suas','isso',
-    'onde','quem','com','que','por','uma','uns','umas','dos','das',
-    'nos','nas','pelo','pela','num','duma','dum','nuns','numas']
-  
-  return text
-    .toLowerCase()
-    .replace(/[^a-záàâãéèêíïóôõöúüçñ\s]/gi, '')
-    .split(/\s+/)
-    .filter(w => w.length > 3 && !stopwords.includes(w))
+const findMatchingArticle = async (pointText) => {
+  try {
+    const stopwords = ['para','como','mais','pelo','pela','este','esta',
+      'esse','essa','entre','quando','sobre','após','numa','com','que',
+      'por','uma','dos','das','nos','nas','num','foram','está','isso']
+
+    const words = pointText
+      .toLowerCase()
+      .replace(/[^a-záàâãéèêíïóôõöúüçñ\s]/gi, '')
+      .split(/\s+/)
+      .filter(w => w.length > 4 && !stopwords.includes(w))
+      .slice(0, 3)
+
+    if (words.length === 0) return null
+
+    const conditions = words.map((w, i) => `title ILIKE $${i + 1}`).join(' OR ')
+    const params = words.map(w => `%${w}%`)
+
+    const result = await sql.unsafe(
+      `SELECT url FROM articles 
+       WHERE (${conditions})
+       AND published_at > NOW() - INTERVAL '24 hours'
+       ORDER BY published_at DESC 
+       LIMIT 1`,
+      params
+    )
+
+    return result[0]?.url || null
+  } catch (err) {
+    console.error('Match error:', err.message)
+    return null
+  }
 }
 
-async function matchSummaryPoints(text, sinceIso) {
+async function matchSummaryPoints(text) {
   const points = (text || "")
     .split(/\d+\.\s/)
     .map((point) => point.trim())
@@ -28,40 +45,7 @@ async function matchSummaryPoints(text, sinceIso) {
   const matchedPoints = [];
 
   for (const pointText of points) {
-    let url = null;
-
-    const words = extractWords(pointText)
-
-    if (!Array.isArray(words) || words.length === 0) {
-      matchedPoints.push({ text: pointText, url: null });
-      continue;
-    }
-
-    const orFilter = words
-      .slice(0, 3)
-      .map(w => `title.ilike.%${w}%`)
-      .join(',')
-
-    try {
-      const likeClauses = words.slice(0, 3).map((word) => {
-        const pattern = `%${word}%`;
-        return sql`title ilike ${pattern}`;
-      });
-      const matchedArticles = await sql`
-        select url
-        from articles
-        where published_at >= ${sinceIso}
-          and (${sql.join(likeClauses, sql` or `)})
-        limit 1
-      `;
-
-      if (matchedArticles?.length) {
-        url = matchedArticles[0]?.url || null;
-      }
-    } catch (matchError) {
-      console.error("Summary point match error:", matchError.message);
-    }
-
+    const url = await findMatchingArticle(pointText);
     matchedPoints.push({ text: pointText, url });
   }
 
@@ -143,12 +127,12 @@ export async function GET(request) {
     }
 
     const text = result.choices[0].message.content;
-    const points = await matchSummaryPoints(text, sinceIso);
+    const points = await matchSummaryPoints(text);
     const createdAt = new Date().toISOString();
 
     await sql`
       insert into summaries (content, points)
-      values (${text}, ${JSON.stringify(points)})
+      values (${text}, ${points})
     `;
 
     return NextResponse.json({
