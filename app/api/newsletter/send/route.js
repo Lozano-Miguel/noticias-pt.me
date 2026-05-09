@@ -130,33 +130,38 @@ export async function GET(request) {
     let sent = 0;
     let failed = 0;
 
-    for (const subscriber of list) {
-      const to = subscriber?.email;
-      if (typeof to !== "string" || !to) continue;
+    const dateString = dateLabel;
 
-      const html = buildEmailHTML(summary, {
-        dateLabel,
-        unsubscribeEmail: to,
-      });
-
-      const dateString = dateLabel;
-
-      const { error } = await resend.emails.send({
+    const emailBatch = list
+      .filter((subscriber) => typeof subscriber?.email === "string" && subscriber.email)
+      .map((subscriber) => ({
         from: 'Notícias PT <resumo@noticias-pt.me>',
         to: subscriber.email,
         subject: 'Resumo do Dia — ' + dateString,
-        html
-      })
+        html: buildEmailHTML(summary, {
+          dateLabel,
+          unsubscribeEmail: subscriber.email,
+        }),
+      }));
 
-      if (error) {
-        console.error('Failed to send to:', subscriber.email, error)
-      }
+    const chunkArray = (arr, size) =>
+      arr.reduce((chunks, item, i) => {
+        if (i % size === 0) chunks.push([]);
+        chunks[chunks.length - 1].push(item);
+        return chunks;
+      }, []);
 
+    const chunks = chunkArray(emailBatch, 100);
+
+    for (const chunk of chunks) {
+      const { error } = await resend.batch.send(chunk);
+      if (error) console.error("Batch send error:", error);
       if (!error) {
-        sent += 1;
+        sent += chunk.length;
       } else {
-        failed += 1;
+        failed += chunk.length;
       }
+      if (chunks.length > 1) await new Promise((r) => setTimeout(r, 1000));
     }
 
     return NextResponse.json({ success: true, sent, failed });
