@@ -19,16 +19,13 @@ export async function POST(request) {
       return NextResponse.json({ error: "invalid_email" }, { status: 400 });
     }
 
-    const inserted = await sql`
+    await sql`
       insert into newsletter_subscribers (email)
       values (${email})
-      on conflict (email) do nothing
-      returning email
+      on conflict (email) do update
+        set active = true,
+            subscribed_at = now()
     `;
-
-    if (!inserted?.length) {
-      return NextResponse.json({ success: true, message: "already_subscribed" });
-    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
