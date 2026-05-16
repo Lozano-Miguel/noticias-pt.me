@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import sql from "../../../lib/db";
+import { isRateLimited } from "../../../lib/ratelimit";
 
 const findMatchingArticle = async (pointText) => {
   try {
@@ -53,6 +54,10 @@ async function matchSummaryPoints(text) {
 }
 
 export async function GET(request) {
+  if (isRateLimited(request, { limit: 10, windowMs: 60 * 60 * 1000 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   try {
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
 

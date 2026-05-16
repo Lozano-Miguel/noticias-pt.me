@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
+import { isRateLimited } from "../../../lib/ratelimit";
+
 export async function POST(request) {
+  if (isRateLimited(request, { limit: 5, windowMs: 60_000 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   try {
     const { messages, context } = await request.json();
 

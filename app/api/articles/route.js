@@ -6,11 +6,13 @@ import deduplicateArticles from "../../../lib/deduplicate.js";
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get("category");
-    const categories = searchParams.get("categories");
-    const source = searchParams.get("source");
-    const sources = searchParams.get("sources");
-    const search = searchParams.get("search");
+    const cap = (value, max) =>
+      typeof value === "string" ? value.slice(0, max) : value;
+    const category = cap(searchParams.get("category"), 50);
+    const categories = cap(searchParams.get("categories"), 50);
+    const source = cap(searchParams.get("source"), 50);
+    const sources = cap(searchParams.get("sources"), 50);
+    const search = cap(searchParams.get("search"), 100);
 
     let categoriesArray = [];
     let sourcesArray = [];

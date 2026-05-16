@@ -7,7 +7,12 @@ import fetchAndSaveEco from "../../../lib/fetchEco.js";
 
 export const maxDuration = 300;
 
-export async function GET() {
+export async function GET(request) {
+  const auth = request.headers.get("authorization");
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const succeeded = [];
   const failed = [];
 
