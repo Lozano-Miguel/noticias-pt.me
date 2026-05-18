@@ -102,18 +102,25 @@ export default async function SobrePage() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
 
-        <h1 className="font-serif text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-          Sobre o Notícias PT
-        </h1>
+        <div className="mb-10">
+          <h1 className="mb-4 font-serif text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+            Sobre o Notícias PT
+          </h1>
 
-        <div
-          className="flex flex-wrap gap-4 items-center px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg mb-8 text-xs text-zinc-500 dark:text-zinc-400"
-        >
-          <span>Sistema operacional</span>
-          <span className="text-zinc-300 dark:text-zinc-600">·</span>
-          <span>{subscriberCount} subscritores</span>
-          <span className="text-zinc-300 dark:text-zinc-600">·</span>
-          <span>Atualizado {relativeTime}</span>
+          <div className="inline-flex flex-wrap items-center gap-3 px-4 py-2 text-xs font-medium rounded-full bg-zinc-100/80 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/50 w-fit backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 dark:opacity-50" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+              </span>
+              Sistema operacional
+            </div>
+
+            <span className="text-zinc-300 dark:text-zinc-600">•</span>
+            <span>{subscriberCount} subscritores</span>
+            <span className="text-zinc-300 dark:text-zinc-600">•</span>
+            <span>Atualizado {relativeTime}</span>
+          </div>
         </div>
 
         <div className="mt-8 space-y-10">
