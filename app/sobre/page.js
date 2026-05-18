@@ -1,6 +1,5 @@
 import SiteHeader from "../../components/SiteHeader";
-
-export const dynamic = "force-static";
+import sql from "../../lib/db";
 
 export const metadata = {
   title: "Sobre — Notícias PT",
@@ -8,7 +7,41 @@ export const metadata = {
     "O Notícias PT é um agregador gratuito de notícias portuguesas. Conheça o projeto, as fontes e quem o desenvolveu.",
 };
 
-export default function SobrePage() {
+function formatRelativeTime(date) {
+  if (!date) return "agora";
+
+  const diffMs = Date.now() - new Date(date).getTime();
+  if (diffMs < 5 * 60 * 1000) return "agora";
+
+  const diffMin = Math.floor(diffMs / (60 * 1000));
+  if (diffMs < 60 * 60 * 1000) return `há ${diffMin} minutos`;
+
+  const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
+  return `há ${diffHours} horas`;
+}
+
+async function getStats() {
+  const [subscribers, articles] = await Promise.all([
+    sql`
+      select count(*)::int as count
+      from newsletter_subscribers
+      where coalesce(active, true) = true
+    `,
+    sql`
+      select max(published_at) as last_update
+      from articles
+    `,
+  ]);
+
+  return {
+    subscriberCount: subscribers[0]?.count ?? 0,
+    lastUpdate: articles[0]?.last_update,
+  };
+}
+
+export default async function SobrePage() {
+  const { subscriberCount, lastUpdate } = await getStats();
+  const relativeTime = formatRelativeTime(lastUpdate);
   const jsonLd = [
     {
       "@context": "https://schema.org",
@@ -72,6 +105,16 @@ export default function SobrePage() {
         <h1 className="font-serif text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
           Sobre o Notícias PT
         </h1>
+
+        <div
+          className="flex flex-wrap gap-4 items-center px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg mb-8 text-xs text-zinc-500 dark:text-zinc-400"
+        >
+          <span>Sistema operacional</span>
+          <span className="text-zinc-300 dark:text-zinc-600">·</span>
+          <span>{subscriberCount} subscritores</span>
+          <span className="text-zinc-300 dark:text-zinc-600">·</span>
+          <span>Atualizado {relativeTime}</span>
+        </div>
 
         <div className="mt-8 space-y-10">
           <section className="space-y-3">

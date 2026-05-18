@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-
+import {revalidadePath} from "next/cache";
 import sql from "../../../lib/db";
 import SOURCES from "../../../lib/sources.js";
 import fetchAndSave from "../../../lib/fetchFeed.js";
@@ -71,6 +71,7 @@ export async function GET(request) {
   } catch (error) {
     console.log("FAILED: cleanup_old_articles - " + error.message);
   }
+  revalidadePath{'/', 'layout');
 
   return NextResponse.json({ succeeded, failed, timing });
 }
