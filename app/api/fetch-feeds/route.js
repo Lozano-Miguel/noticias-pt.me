@@ -71,7 +71,7 @@ export async function GET(request) {
   } catch (error) {
     console.log("FAILED: cleanup_old_articles - " + error.message);
   }
-  revalidadePath{'/', 'layout');
+  revalidadePath('/', 'layout');
 
   return NextResponse.json({ succeeded, failed, timing });
 }
